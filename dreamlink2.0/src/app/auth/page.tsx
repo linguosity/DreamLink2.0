@@ -1,22 +1,28 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"; // your Card components
-import { Input } from "@/components/ui/input"; // your Input component
-import { Label } from "@/components/ui/label"; // your Label component
-import { Button } from "@/components/ui/button"; // your Button component
-import { Separator } from "@/components/ui/separator"; // your Separator component
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import useSession from '@/lib/utils/use-session';
 
-const AuthPage = () => {
+export default function AuthPage() {
+  const router = useRouter();
+  const session = useSession();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  // Auto-redirect if a session exists
+  useEffect(() => {
+    if (session) {
+      router.push("/main");
+    }
+  }, [session, router]);
 
   const handleSignUp = async () => {
     setIsLoading(true);
@@ -44,6 +50,8 @@ const AuthPage = () => {
     const data = await res.json();
     if (data.success) {
       setMessage("Login successful!");
+      // Redirect to main page upon successful login
+      router.push("/main");
     } else {
       setMessage(`Error: ${data.error}`);
     }
@@ -123,6 +131,4 @@ const AuthPage = () => {
       </Card>
     </div>
   );
-};
-
-export default AuthPage;
+}
