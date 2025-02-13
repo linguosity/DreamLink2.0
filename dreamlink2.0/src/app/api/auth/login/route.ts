@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseClient';
+import { createClient } from '@/lib/utils/server-client';
 
 export async function POST(req: Request) {
-  console.log('Received a request with method:', req.method);  // Should output POST
+  console.log('Received a request with method:', req.method);
   const { email, password } = await req.json();
+
+  // Use your SSR client instead of the client from supabaseClient.ts
+  const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   
   if (error) {
