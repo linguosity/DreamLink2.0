@@ -1,13 +1,42 @@
-import { supabase } from '@/lib/supabaseClient';
+// cSpell:ignore supabase
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/utils/server-client';
+import { createClient, MutableCookies } from '@/lib/utils/server-client';
 
-export async function POST() {
-  const { error } = await supabase.auth.signOut();
+export async function POST(req: Request) {
+  console.log('[logout] Received logout request.');
+  try {
+    const response = new NextResponse(JSON.stringify({}), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
 
-  if (error) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 400 });
+    const mutableCookies = response.cookies as unknown as MutableCookies;
+    const supabase = await createClient(mutableCookies);
+    console.log('[logout] Supabase client created for logout.');
+
+    const { error } = await supabase.auth.signOut();
+    console.log('[logout] signOut result:', { error });
+
+    if (error) {
+      console.error('[logout] Error during signOut:', error.message);
+      return new NextResponse(
+        JSON.stringify({ success: false, error: error.message }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('[logout] Logout successful. Clearing auth cookie.');
+    mutableCookies.delete('sb-localhost-auth-token'); // adjust the cookie name if needed
+
+    return new NextResponse(
+      JSON.stringify({ success: true }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    );
+  } catch (err) {
+    console.error('[logout] Exception:', err);
+    return new NextResponse(
+      JSON.stringify({ success: false, error: 'Unexpected error' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
   }
-
-  return NextResponse.json({ success: true });
 }
