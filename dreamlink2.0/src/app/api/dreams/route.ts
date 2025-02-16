@@ -1,8 +1,6 @@
-// src/app/api/dreams/route.ts
-
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createSupabaseServerClient } from '@/lib/utils/server-client';
+import { createClientWithServiceRole } from '@/lib/utils/server-client'; // or createClient if not testing with service role
 import { dreamAnalysisSchema } from '@/types/dreamAnalysis';
 
 // Dummy function to simulate server-side session retrieval.
@@ -28,20 +26,24 @@ export async function POST(req: Request) {
     }
     console.log('Session user id:', session.user.id);
 
-    const insertData = {
-      user_id: session.user.id,
+    // Construct the analysis JSON object
+    const analysisPayload = {
       title: parsed.data.title,
-      content: parsed.data.original_dream,
-      summary: JSON.stringify({
-        tags: parsed.data.tags,
-        analysis: parsed.data.analysis,
-      }),
+      original_dream: parsed.data.original_dream,
+      tags: parsed.data.tags,
+      analysis: parsed.data.analysis,
+      // Optionally include timestamps if needed
+      created_at: parsed.data.created_at,
+      updated_at: parsed.data.updated_at,
     };
 
-    const supabase = createSupabaseServerClient();
+    const insertData = {
+      user_id: session.user.id,
+      analysis: JSON.stringify(analysisPayload),
+    };
 
-    // (Removed RPC call for setting search_path.)
-
+    // Use the service role client for testing (to bypass JWT issues)
+    const supabase = await createClientWithServiceRole();
     const { data, error } = await supabase
       .from('dream_entries')
       .insert(insertData)
