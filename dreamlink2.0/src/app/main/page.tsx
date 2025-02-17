@@ -1,12 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { supabase } from "@/lib/supabaseClient"; // Ensure this is your initialized client
+import { RealtimeChannel } from '@supabase/supabase-js';
+import HeaderMenu from "@/components/layout/HeaderMenu"; 
 
 interface Dream {
   id: number;
@@ -16,97 +19,55 @@ interface Dream {
   tags: string[];
 }
 
-const dummyDreams: Dream[] = [
-  {
-    id: 1,
-    date: "February 2, 2025",
-    title: "Dream Title 1",
-    description: "A short summary of what the dream may mean.",
-    tags: ["Tree of Life", "en"],
-  },
-  {
-    id: 2,
-    date: "February 2, 2025",
-    title: "Dream Title 2",
-    description: "Another interpretation summary.",
-    tags: ["Nightmare", "en"],
-  },
-];
-
 export default function MainPage() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [dreams, setDreams] = useState<Dream[]>([]);
 
-  // Sign out the user
-  const handleSignOut = async () => {
-    try {
-      await fetch("/api/auth/logout", { method: "POST" });
-      router.push("/auth"); // Redirect to your login page
-    } catch (error) {
-      console.error("Sign out failed:", error);
+  // Function to fetch dreams from the database
+  const fetchDreams = async () => {
+    const { data, error } = await supabase.from("dream_entries").select("*");
+    if (error) {
+      console.error("Error fetching dreams:", error);
+    } else if (data) {
+      setDreams(data as Dream[]);
     }
   };
+
+  useEffect(() => {
+    // Ensure we call supabase.channel() rather than supabase.from()
+    const channel = supabase.channel("realtime:public:dream_entries") as RealtimeChannel;
+    channel
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "dream_entries" },
+        (payload) => {
+          console.log("Realtime change received:", payload);
+          fetchDreams();
+        }
+      )
+      .subscribe();
+  
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  // Filter dreams based on the search query
+  const filteredDreams = dreams.filter((dream) =>
+    dream.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-900 p-4">
       {/* Header */}
-      <header className="flex justify-between items-center pb-4 border-b border-gray-700">
-        <h1 className="text-3xl font-bold text-white">Dreamlink</h1>
-
-        {/* User Avatar + Dropdown Menu */}
-        <div className="relative">
-          <div
-            className="w-10 h-10 rounded-full bg-primary flex justify-center items-center text-white cursor-pointer"
-            onClick={() => setMenuOpen((prev) => !prev)}
-          >
-            B
-          </div>
-
-          {/* Dropdown Menu */}
-          {menuOpen && (
-            <div className="absolute right-0 mt-2 w-40 bg-white rounded shadow-lg z-10">
-              {/* New "Account" Option */}
-              <button
-                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                onClick={() => {
-                  setMenuOpen(false);
-                  router.push("/account"); // Navigate to your new account page
-                }}
-              >
-                Account
-              </button>
-              {/* Existing Settings Option */}
-              <button
-                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                onClick={() => {
-                  setMenuOpen(false);
-                  router.push("/settings");
-                }}
-              >
-                Settings
-              </button>
-              {/* Sign Out Option */}
-              <button
-                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                onClick={() => {
-                  setMenuOpen(false);
-                  handleSignOut();
-                }}
-              >
-                Sign Out
-              </button>
-            </div>
-          )}
-        </div>
-      </header>
+      <HeaderMenu />
 
       {/* Dream Submission Box */}
       <section className="my-6">
         <div className="flex space-x-2">
           <Input placeholder="Share your dream journey..." className="flex-1" />
           <Button variant="default" className="flex items-center">
-            {/* Paper plane icon */}
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="h-5 w-5 mr-1"
@@ -124,7 +85,6 @@ export default function MainPage() {
             Send
           </Button>
           <Button variant="outline" className="flex items-center">
-            {/* Fullscreen toggle icon */}
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="h-5 w-5"
@@ -153,7 +113,6 @@ export default function MainPage() {
             className="flex-1"
           />
           <Button variant="outline">
-            {/* Search Icon */}
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="h-5 w-5 mr-1"
@@ -177,11 +136,8 @@ export default function MainPage() {
 
       {/* Dream Entries (Grid Layout) */}
       <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {dummyDreams
-          .filter((dream) =>
-            dream.title.toLowerCase().includes(searchQuery.toLowerCase())
-          )
-          .map((dream) => (
+        {filteredDreams.length > 0 ? (
+          filteredDreams.map((dream) => (
             <Card key={dream.id} className="p-4">
               <p className="text-sm italic text-gray-500">{dream.date}</p>
               <h2 className="text-xl font-bold">{dream.title}</h2>
@@ -194,7 +150,17 @@ export default function MainPage() {
                 ))}
               </div>
             </Card>
-          ))}
+          ))
+        ) : (
+          // Ghost CTA card when no dreams exist
+          <Card className="p-4 border-dashed border-2 border-gray-500 bg-gray-800 text-gray-400 flex flex-col items-center justify-center">
+            <h2 className="text-xl font-bold mb-2">No Dreams Yet</h2>
+            <p className="mb-4">Start by creating your first dream analysis card!</p>
+            <Button onClick={() => router.push("/create-dream")}>
+              Create Dream Analysis
+            </Button>
+          </Card>
+        )}
       </section>
     </div>
   );
