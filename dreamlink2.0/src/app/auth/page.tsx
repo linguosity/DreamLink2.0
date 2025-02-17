@@ -60,12 +60,17 @@ export default function AuthPage() {
 
   const handleLogout = async () => {
     setIsLoading(true);
-    const res = await fetch("/api/auth/logout", { method: "POST" });
-    const data = await res.json();
-    if (data.success) {
-      setMessage("Logged out successfully!");
-    } else {
-      setMessage(`Error: ${data.error}`);
+    try {
+      const res = await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+      const data = await res.json();
+      if (data.success) {
+        // Instead of router.push, force a full reload:
+        window.location.href = "/auth"; // or your login page URL
+      } else {
+        setMessage(`Error: ${data.error}`);
+      }
+    } catch (error: any) {
+      setMessage(`Request failed: ${error.message}`);
     }
     setIsLoading(false);
   };
