@@ -15,7 +15,7 @@ export default function SettingsPage() {
 
   // Fetch the user's current profile from GET /api/profiles
   useEffect(() => {
-    fetch("/api/profiles")
+    fetch("/api/profiles", { credentials: "include" })
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {

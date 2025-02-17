@@ -66,6 +66,17 @@ export default function MainPage() {
           {/* Dropdown Menu */}
           {menuOpen && (
             <div className="absolute right-0 mt-2 w-40 bg-white rounded shadow-lg z-10">
+              {/* New "Account" Option */}
+              <button
+                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                onClick={() => {
+                  setMenuOpen(false);
+                  router.push("/account"); // Navigate to your new account page
+                }}
+              >
+                Account
+              </button>
+              {/* Existing Settings Option */}
               <button
                 className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                 onClick={() => {
@@ -75,9 +86,13 @@ export default function MainPage() {
               >
                 Settings
               </button>
+              {/* Sign Out Option */}
               <button
                 className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                onClick={handleSignOut}
+                onClick={() => {
+                  setMenuOpen(false);
+                  handleSignOut();
+                }}
               >
                 Sign Out
               </button>

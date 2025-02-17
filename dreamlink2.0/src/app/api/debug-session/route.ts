@@ -1,14 +1,17 @@
-// cSpell:ignore supabase
+// /src/app/api/debug-session/route.ts
 import { NextResponse } from 'next/server';
-import { createClient, MutableCookies } from '@/lib/utils/server-client';
+import { cookies } from 'next/headers';
+import { createClient } from '@/lib/utils/server-client';
 
 export async function GET() {
   console.log('[debug-session] Received GET request.');
   try {
-    const dummyResponse = new NextResponse();
-    dummyResponse.headers.set('Content-Type', 'application/json');
-    const mutableCookies = dummyResponse.cookies as unknown as MutableCookies;
-    const supabase = await createClient(mutableCookies);
+    // Await cookies() to get the actual cookie store from the incoming request.
+    const cookieStore = await cookies();
+    console.log('[debug-session] Request cookies:', cookieStore.getAll());
+
+    // Pass the actual cookie store to createClient.
+    const supabase = await createClient(cookieStore as any);
     const { data: { session }, error } = await supabase.auth.getSession();
     console.log('[debug-session] Session data:', session, 'Error:', error);
 

@@ -8,6 +8,7 @@ async function getSession() {
   return { user: { id: 'cdfca057-74f7-4ece-b4de-5f624611d200' } };
 }
 
+// POST
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -60,6 +61,81 @@ export async function POST(req: Request) {
     return NextResponse.json(
       { success: false, error: err instanceof Error ? err.message : 'Unknown error' },
       { status: 500 }
+    );
+  }
+}
+
+// GET: Retrieve all dream entries
+export async function GET(req: Request) {
+  try {
+    // Use the service role client for testing
+    const supabase = await createClientWithServiceRole();
+    // Retrieve all dream entries
+    const { data, error } = await supabase.from('dream_entries').select('*');
+
+    if (error) {
+      console.error('[dreams][GET] Supabase error:', error);
+      return new NextResponse(
+        JSON.stringify({ success: false, error: error.message }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+    console.log('[dreams][GET] Retrieved entries:', data);
+    return new NextResponse(
+      JSON.stringify({ success: true, data }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    );
+  } catch (err) {
+    console.error('[dreams][GET] Exception:', err);
+    return new NextResponse(
+      JSON.stringify({ success: false, error: err instanceof Error ? err.message : 'Unknown error' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+}
+
+// DELETE: Remove a dream entry by ID
+export async function DELETE(req: Request) {
+  try {
+    // Parse the URL to get query parameters
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+
+    if (!id) {
+      return new NextResponse(
+        JSON.stringify({ success: false, error: "Missing id parameter" }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    // Use the service role client for testing
+    const supabase = await createClientWithServiceRole();
+
+    // Delete the dream entry with the given id
+    const { data, error } = await supabase
+      .from("dream_entries")
+      .delete()
+      .eq("id", id)
+      .select();
+
+    if (error) {
+      console.error("[dreams][DELETE] Supabase error:", error);
+      return new NextResponse(
+        JSON.stringify({ success: false, error: error.message }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log("[dreams][DELETE] Deleted entry:", data);
+    return new NextResponse(
+      JSON.stringify({ success: true, data }),
+      { status: 200, headers: { "Content-Type": "application/json" } }
+    );
+  } catch (err) {
+    console.error("[dreams][DELETE] Exception:", err);
+    return new NextResponse(
+      JSON.stringify({ success: false, error: err instanceof Error ? err.message : "Unknown error" }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
 }
