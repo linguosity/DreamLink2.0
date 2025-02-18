@@ -1,4 +1,5 @@
-'use client';
+// src/app/auth/page.tsx
+"use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -7,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import useSession from '@/lib/utils/use-session';
+import useSession from "@/lib/utils/use-session";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function AuthPage() {
   const router = useRouter();
@@ -17,7 +19,7 @@ export default function AuthPage() {
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // Auto-redirect if a session exists
+  // Auto-redirect if a session exists.
   useEffect(() => {
     if (session) {
       router.push("/main");
@@ -30,6 +32,7 @@ export default function AuthPage() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
+      credentials: "include",
     });
     const data = await res.json();
     if (data.success) {
@@ -46,12 +49,17 @@ export default function AuthPage() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
+      credentials: "include",
     });
     const data = await res.json();
     if (data.success) {
       setMessage("Login successful!");
-      // Redirect to main page upon successful login
-      router.push("/main");
+      // After a successful login, wait a moment for the cookie to be set
+      setTimeout(async () => {
+        const { data: { session: newSession } } = await supabase.auth.getSession();
+        console.log("Session after login:", newSession);
+        router.push("/main");
+      }, 500);
     } else {
       setMessage(`Error: ${data.error}`);
     }
@@ -64,8 +72,7 @@ export default function AuthPage() {
       const res = await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
       const data = await res.json();
       if (data.success) {
-        // Instead of router.push, force a full reload:
-        window.location.href = "/auth"; // or your login page URL
+        window.location.href = "/auth";
       } else {
         setMessage(`Error: ${data.error}`);
       }

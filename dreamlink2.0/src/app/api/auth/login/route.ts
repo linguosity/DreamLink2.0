@@ -7,27 +7,27 @@ export async function POST(req: Request) {
     const { email, password } = await req.json();
     console.log('[login] Payload:', { email, password });
 
-    // 1. Create an initial mutable response object
+    // Create an initial mutable response object
     const initialResponse = new NextResponse(null, {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
 
-    // 2. Convert its cookies store to our mutable cookies type
+    // Get the mutable cookies store
     const mutableCookies = initialResponse.cookies as unknown as MutableCookies;
 
-    // 3. Create the Supabase client with that mutable cookies store
+    // Create the Supabase client using the mutable cookies
     const supabase = await createClient(mutableCookies);
     console.log('[login] Supabase client created.');
 
-    // 4. Sign in with Supabase Auth
+    // Sign in with Supabase Auth
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     console.log('[login] signInWithPassword result:', { data, error });
 
-    if (error) {
-      console.error('[login] Error during login:', error.message);
+    if (error || !data.session) {
+      console.error('[login] Error during login:', error?.message);
       return new NextResponse(
-        JSON.stringify({ success: false, error: error.message }),
+        JSON.stringify({ success: false, error: error?.message || 'No session returned' }),
         {
           status: 400,
           headers: { 'Content-Type': 'application/json' },
@@ -35,19 +35,23 @@ export async function POST(req: Request) {
       );
     }
 
-    // 5. Build the final response with the JSON body
+    // Prepare the final response with JSON body
     const responseBody = { success: true, data };
     const finalResponse = NextResponse.json(responseBody, {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
 
-    // 6. Copy all cookies from the initialResponse to the finalResponse.
-    const allCookies = initialResponse.cookies.getAll();
-    for (const cookie of allCookies) {
-      // Since cookie.options is not available, we simply set the cookie using name and value.
-      finalResponse.cookies.set(cookie.name, cookie.value);
-    }
+    // Manually set the auth cookie.
+    // Note: Adjust the domain if your app runs on 127.0.0.1 (or localhost) accordingly.
+    finalResponse.cookies.set('sb-127-auth-token', data.session.access_token, {
+      path: '/',
+      domain: '127.0.0.1', // make sure this matches your app's host
+      sameSite: 'lax',
+      httpOnly: false,   // for debugging; consider setting true in production
+      maxAge: 3600,
+    });
+    console.log('[login] Auth cookie set with access token.');
 
     return finalResponse;
   } catch (err) {
