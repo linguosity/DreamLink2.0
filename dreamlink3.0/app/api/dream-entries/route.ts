@@ -1,39 +1,73 @@
-import { NextResponse } from "next/server";
-import { z } from "zod";
-import { dreamEntrySchema } from "@/schema/dreamEntry";
 import { createClient } from "@/utils/supabase/server";
+import { NextResponse } from "next/server";
 
-export async function POST(req: Request) {
+export async function POST(request: Request) {
+  const supabase = await createClient();
+  
+  // Get current user
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  
+  if (authError || !user) {
+    return NextResponse.json(
+      { error: "Unauthorized: You must be logged in to submit a dream" },
+      { status: 401 }
+    );
+  }
+  
   try {
-    // Parse and validate incoming JSON using the Zod schema
-    const body = await req.json();
-    const validatedData = dreamEntrySchema.parse(body);
-
-    // Insert the validated data into the dream_entries table
-    const supabase = await createClient();
-    const { data, error } = await supabase
-      .from("dream_entries")
-      .insert(validatedData)
-      .select();
-
-    if (error) {
+    // Parse request body
+    const body = await request.json();
+    const { dream_text } = body;
+    
+    if (!dream_text || typeof dream_text !== "string" || dream_text.trim() === "") {
       return NextResponse.json(
-        { success: false, error: error.message },
+        { error: "Dream text is required" },
         { status: 400 }
       );
     }
     
-    return NextResponse.json({ success: true, data });
-  } catch (err) {
-    // Return validation errors if present
-    if (err instanceof z.ZodError) {
+    // Generate a placeholder title from the first 50 characters
+    const title = dream_text.substring(0, 50) + (dream_text.length > 50 ? "..." : "");
+    
+    // Default placeholder analysis (will be replaced with AI processing in the future)
+    const placeholder_analysis = {
+      summary: "Dream analysis is being processed...",
+      interpretation: "Interpretation pending...",
+      biblical_references: []
+    };
+    
+    // Insert dream into database
+    const { data, error } = await supabase
+      .from("dream_entries")
+      .insert({
+        user_id: user.id,
+        original_text: dream_text,
+        title,
+        analysis: placeholder_analysis,
+        status: "pending" // For tracking analysis status
+      })
+      .select("id")
+      .single();
+    
+    if (error) {
+      console.error("Error saving dream:", error);
       return NextResponse.json(
-        { success: false, error: err.errors },
-        { status: 400 }
+        { error: "Failed to save dream entry" },
+        { status: 500 }
       );
     }
+    
+    // Return success with the created dream ID
+    return NextResponse.json({ 
+      success: true,
+      message: "Dream recorded successfully",
+      id: data.id
+    });
+    
+  } catch (error) {
+    console.error("Error processing dream submission:", error);
     return NextResponse.json(
-      { success: false, error: "Unexpected error" },
+      { error: "An unexpected error occurred" },
       { status: 500 }
     );
   }
