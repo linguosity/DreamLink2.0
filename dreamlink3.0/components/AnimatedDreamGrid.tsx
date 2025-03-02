@@ -1,8 +1,26 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import DreamCard from './DreamCard';
+import dynamic from 'next/dynamic';
+// Import framer-motion with error handling to prevent build failures
+let motion: any = { div: 'div' };
+let AnimatePresence: any = ({ children }: { children: React.ReactNode }) => <>{children}</>;
+
+try {
+  // Try to import framer-motion
+  const framerMotion = require('framer-motion');
+  motion = framerMotion.motion;
+  AnimatePresence = framerMotion.AnimatePresence;
+} catch (e) {
+  console.error('Error loading framer-motion:', e);
+  // Fallback to regular divs if framer-motion fails to load
+}
+
+// Use dynamic import for DreamCard with SSR disabled as fallback
+const DreamCard = dynamic(() => import('./DreamCard'), {
+  ssr: false,
+  loading: () => <div className="h-64 w-full bg-muted animate-pulse rounded-md"></div>
+});
 
 interface Dream {
   id: string;
