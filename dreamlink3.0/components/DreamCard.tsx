@@ -1,14 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CalendarIcon, BookIcon, PuzzleIcon } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { CalendarIcon, BookIcon, PuzzleIcon, Trash2Icon } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 type DreamEntryProps = {
   empty?: boolean;
@@ -87,6 +89,35 @@ export default function DreamCard({ empty, loading: initialLoading, dream }: Dre
   const handleCardClick = () => {
     // Always open dialog, even for placeholder/example dreams
     setIsOpen(true);
+  };
+  
+  // Handle delete dream
+  const [isDeleting, setIsDeleting] = useState(false);
+  
+  const handleDeleteDream = async () => {
+    if (empty) return; // Don't allow deleting example dreams
+    
+    setIsDeleting(true);
+    
+    try {
+      const response = await fetch(`/api/dream-entries?id=${dream.id}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete dream');
+      }
+      
+      // Close the dialog and refresh the page
+      setIsOpen(false);
+      router.refresh();
+      
+    } catch (error) {
+      console.error('Error deleting dream:', error);
+      alert('Failed to delete this dream. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   // Function to format Bible citations in parentheses with tooltips
@@ -268,36 +299,74 @@ export default function DreamCard({ empty, loading: initialLoading, dream }: Dre
           </Tabs>
           
           {/* Footer with tags and biblical references */}
-          <div className="mt-4 pt-4 border-t flex flex-wrap gap-2">
-            {dream.tags && dream.tags.length > 0 && (
-              <div className="flex flex-wrap gap-1">
-                {dream.tags.map((tag, index) => (
-                  <Badge key={index} variant="secondary" className="text-xs">
-                    {tag}
-                  </Badge>
-                ))}
+          <div className="mt-4 pt-4 border-t">
+            <div className="flex justify-between items-start">
+              <div className="flex flex-wrap gap-2">
+                {dream.tags && dream.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {dream.tags.map((tag, index) => (
+                      <Badge key={index} variant="secondary" className="text-xs">
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+                
+                {dream.bible_refs && dream.bible_refs.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    <TooltipProvider>
+                      {dream.bible_refs.map((ref, index) => (
+                        <Tooltip key={index}>
+                          <TooltipTrigger asChild>
+                            <Badge variant="outline" className="text-xs flex items-center gap-1">
+                              <BookIcon className="h-2 w-2" />
+                              {ref}
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="max-w-[300px] text-xs">{BIBLE_VERSES[ref as keyof typeof BIBLE_VERSES] || "Verse content"}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      ))}
+                    </TooltipProvider>
+                  </div>
+                )}
               </div>
-            )}
-            
-            {dream.bible_refs && dream.bible_refs.length > 0 && (
-              <div className="flex flex-wrap gap-1">
-                <TooltipProvider>
-                  {dream.bible_refs.map((ref, index) => (
-                    <Tooltip key={index}>
-                      <TooltipTrigger asChild>
-                        <Badge variant="outline" className="text-xs flex items-center gap-1">
-                          <BookIcon className="h-2 w-2" />
-                          {ref}
-                        </Badge>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="max-w-[300px] text-xs">{BIBLE_VERSES[ref as keyof typeof BIBLE_VERSES] || "Verse content"}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  ))}
-                </TooltipProvider>
-              </div>
-            )}
+              
+              {/* Delete Button with Confirmation */}
+              {!empty && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <Trash2Icon className="h-4 w-4 mr-1" />
+                      <span className="text-xs">Delete</span>
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you sure you want to delete this dream?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete your dream and all associated analysis.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction 
+                        onClick={handleDeleteDream}
+                        className="bg-red-500 hover:bg-red-600"
+                        disabled={isDeleting}
+                      >
+                        {isDeleting ? "Deleting..." : "Delete Dream"}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </div>
           </div>
         </DialogContent>
       </Dialog>

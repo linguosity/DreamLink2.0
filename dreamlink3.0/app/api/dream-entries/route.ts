@@ -104,6 +104,94 @@ async function analyzeDream(dreamText: string): Promise<DreamAnalysis> {
   }
 }
 
+export async function DELETE(request: Request) {
+  const supabase = await createClient();
+  
+  // Get current user
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  
+  if (authError || !user) {
+    return NextResponse.json(
+      { error: "Unauthorized: You must be logged in to delete a dream" },
+      { status: 401 }
+    );
+  }
+  
+  try {
+    // Get dream ID from URL
+    const url = new URL(request.url);
+    const id = url.searchParams.get('id');
+    
+    if (!id) {
+      return NextResponse.json(
+        { error: "Dream ID is required" },
+        { status: 400 }
+      );
+    }
+    
+    // Verify ownership before deleting
+    const { data: dream, error: fetchError } = await supabase
+      .from("dream_entries")
+      .select("user_id")
+      .eq("id", id)
+      .single();
+      
+    if (fetchError) {
+      console.error("Error fetching dream:", fetchError);
+      return NextResponse.json(
+        { error: "Dream not found" },
+        { status: 404 }
+      );
+    }
+    
+    // Check if the user owns this dream
+    if (dream.user_id !== user.id) {
+      return NextResponse.json(
+        { error: "Unauthorized: You can only delete your own dreams" },
+        { status: 403 }
+      );
+    }
+    
+    // Delete related records first (foreign key constraints)
+    // Delete bible citations
+    await supabase
+      .from("bible_citations")
+      .delete()
+      .eq("dream_entry_id", id);
+      
+    // Delete ChatGPT interactions  
+    await supabase
+      .from("chatgpt_interactions")
+      .delete()
+      .eq("dream_entry_id", id);
+    
+    // Delete the dream entry
+    const { error: deleteError } = await supabase
+      .from("dream_entries")
+      .delete()
+      .eq("id", id);
+      
+    if (deleteError) {
+      console.error("Error deleting dream:", deleteError);
+      return NextResponse.json(
+        { error: "Failed to delete dream" },
+        { status: 500 }
+      );
+    }
+    
+    return NextResponse.json({
+      success: true,
+      message: "Dream deleted successfully"
+    });
+  } catch (error) {
+    console.error("Error processing delete request:", error);
+    return NextResponse.json(
+      { error: "An unexpected error occurred" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(request: Request) {
   const supabase = await createClient();
   
