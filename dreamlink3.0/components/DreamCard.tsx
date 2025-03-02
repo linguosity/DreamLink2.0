@@ -183,7 +183,7 @@ export default function DreamCard({ empty, loading: initialLoading, dream }: Dre
   return (
     <>
       <Card 
-        className="overflow-hidden transition-all h-full cursor-pointer hover:shadow-md"
+        className="overflow-hidden transition-all h-full cursor-pointer hover:shadow-md will-change-transform"
         onClick={handleCardClick}
       >
         <CardHeader className="p-3 pb-1">

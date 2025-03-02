@@ -1,11 +1,11 @@
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
-import DreamCard from "@/components/DreamCard";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import CompactDreamInput from "@/components/CompactDreamInput";
+import AnimatedDreamGrid from "@/components/AnimatedDreamGrid";
 
 export default async function MainPage() {
   const supabase = await createClient();
@@ -34,36 +34,10 @@ export default async function MainPage() {
         {/* Dream Input Section */}
         <CompactDreamInput userId={user.id} />
         
-        {/* Dream Cards Carousel */}
+        {/* Animated Dream Grid */}
         <div className="mt-12">
-          <div className="flex overflow-x-auto pb-4 snap-x snap-mandatory gap-4 scrollbar-hide">
-            {(!dreams || dreams.length === 0) ? (
-              <div className="snap-center shrink-0 w-full sm:w-1/2 md:w-1/3 lg:w-1/3">
-                <DreamCard 
-                  empty={true} 
-                  dream={{
-                    id: 'placeholder',
-                    original_text: "I was walking along a beach at sunset when I noticed the water was crystal clear. I could see colorful fish swimming beneath the surface. Suddenly, the water parted in front of me like the Red Sea in the Bible. I walked between the walls of water and discovered an ancient temple with symbols I couldn't understand. Inside the temple was a bright light that spoke to me, saying I had a mission to fulfill. I woke up feeling peaceful yet with a sense of purpose.",
-                    title: 'Example: Ocean Temple Dream',
-                    dream_summary: 'A journey to an underwater temple where divine guidance was received, suggesting a spiritual calling or mission.',
-                    analysis_summary: 'This dream contains elements of divine revelation and spiritual journey. The parting waters reference Moses and the Exodus story, while the temple represents a sacred space for divine communication. The voice from light suggests divine guidance or calling.',
-                    tags: ['Water', 'Temple', 'Divine Message', 'Journey'],
-                    bible_refs: ['Exodus 14:21', 'John 8:12', '1 Kings 6:19', 'Psalm 23:2'],
-                    created_at: new Date().toISOString()
-                  }} 
-                />
-              </div>
-            ) : (
-              // Show actual dreams if they exist
-              dreams.slice(0, 10).map((dream: any) => (
-                <div key={dream.id} className="snap-center shrink-0 w-full sm:w-1/2 md:w-1/3 lg:w-1/3">
-                  {/* We can't directly use localStorage here since this is a server component.
-                      The loading state will be handled by client JavaScript in the DreamCard */}
-                  <DreamCard dream={dream} />
-                </div>
-              ))
-            )}
-          </div>
+          <h2 className="text-lg font-semibold mb-4">Your Dream Journal</h2>
+          <AnimatedDreamGrid dreams={dreams || []} />
         </div>
         
         {/* Footer Section */}
