@@ -57,6 +57,8 @@ export default async function MainPage() {
               // Show actual dreams if they exist
               dreams.slice(0, 10).map((dream: any) => (
                 <div key={dream.id} className="snap-center shrink-0 w-full sm:w-1/2 md:w-1/3 lg:w-1/3">
+                  {/* We can't directly use localStorage here since this is a server component.
+                      The loading state will be handled by client JavaScript in the DreamCard */}
                   <DreamCard dream={dream} />
                 </div>
               ))

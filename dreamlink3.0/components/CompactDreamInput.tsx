@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { Send, ExpandIcon } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 import { Textarea } from "./ui/textarea";
+import { useRouter } from "next/navigation";
 
 interface CompactDreamInputProps {
   userId: string;
@@ -16,6 +17,7 @@ export default function CompactDreamInput({ userId }: CompactDreamInputProps) {
   const [expandedDream, setExpandedDream] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const router = useRouter();
 
   // Handler for submitting from compact input
   const handleSubmit = async (event?: React.FormEvent) => {
@@ -55,9 +57,17 @@ export default function CompactDreamInput({ userId }: CompactDreamInputProps) {
       if (!response.ok) {
         throw new Error("Failed to submit dream");
       }
+      
+      const result = await response.json();
+      
+      // Store the loading dream ID in localStorage
+      if (result.id) {
+        localStorage.setItem('loadingDreamId', result.id);
+        console.log('Set loading dream ID:', result.id);
+      }
 
-      // Optionally refresh the page to show the new entry
-      window.location.reload();
+      // Refresh the page to show the new entry with loading state
+      router.refresh();
     } catch (error) {
       console.error("Error submitting dream:", error);
       alert("Failed to submit your dream. Please try again.");

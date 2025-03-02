@@ -8,9 +8,11 @@ import { CalendarIcon, BookIcon, PuzzleIcon } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type DreamEntryProps = {
   empty?: boolean;
+  loading?: boolean;
   dream: {
     id: string;
     original_text: string;
@@ -39,16 +41,47 @@ const BIBLE_VERSES = {
   "1 Kings 6:19": "And the oracle he prepared in the house within, to set there the ark of the covenant of the LORD."
 };
 
-export default function DreamCard({ empty, dream }: DreamEntryProps) {
+export default function DreamCard({ empty, loading: initialLoading, dream }: DreamEntryProps) {
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
-
+  const [isLoading, setIsLoading] = useState(initialLoading || false);
+  
   // Format date as MMM DD
   const dateObj = dream.created_at ? new Date(dream.created_at) : new Date();
   const formattedDate = dateObj.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric'
   });
+  
+  // Check if this dream is the loading dream (just submitted)
+  useEffect(() => {
+    // Get the loading dream ID from localStorage
+    const loadingDreamId = typeof window !== 'undefined' ? 
+      localStorage.getItem('loadingDreamId') : null;
+    
+    // If this is the loading dream, set loading state
+    if (loadingDreamId === dream.id) {
+      console.log('This dream is loading:', dream.id);
+      setIsLoading(true);
+      
+      // Check every 2 seconds if the dream analysis is complete
+      const interval = setInterval(() => {
+        // If dream has analysis, clear interval and update state
+        if (dream.dream_summary || dream.analysis_summary || 
+            (dream.supporting_points && dream.supporting_points.length > 0)) {
+          console.log('Dream analysis complete:', dream.id);
+          setIsLoading(false);
+          localStorage.removeItem('loadingDreamId');
+          clearInterval(interval);
+        } else {
+          // Refresh the page to get updated dream data
+          router.refresh();
+        }
+      }, 2000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [dream.id, dream.dream_summary, dream.analysis_summary, dream.supporting_points]);
 
   // Handle card click to show dialog
   const handleCardClick = () => {
@@ -86,6 +119,35 @@ export default function DreamCard({ empty, dream }: DreamEntryProps) {
       </TooltipProvider>
     );
   };
+
+  // Render loading skeleton if in loading state
+  if (isLoading) {
+    return (
+      <Card className="overflow-hidden transition-all h-full">
+        <CardHeader className="p-3 pb-1">
+          <div className="flex justify-between items-center">
+            <Skeleton className="h-4 w-[150px]" />
+            <Skeleton className="h-3 w-[60px]" />
+          </div>
+        </CardHeader>
+        
+        <CardContent className="p-3 pt-1 space-y-2">
+          {/* Summary Skeleton */}
+          <div>
+            <Skeleton className="h-3 w-full mb-1" />
+            <Skeleton className="h-3 w-[80%]" />
+          </div>
+          
+          {/* Tags Skeleton */}
+          <div className="flex flex-wrap gap-1">
+            <Skeleton className="h-4 w-12 rounded-full" />
+            <Skeleton className="h-4 w-14 rounded-full" />
+            <Skeleton className="h-4 w-10 rounded-full" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <>
