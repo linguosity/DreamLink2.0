@@ -8,9 +8,14 @@ export const dreamEntrySchema = z.object({
   dream_summary: z.string().optional(),
   analysis_summary: z.string().optional(),
   topic_sentence: z.string().optional(),
+  supporting_points: z.array(z.string()).optional(),
+  conclusion_sentence: z.string().optional(),
+  formatted_analysis: z.string().optional(),
   gematria_interpretation: z.string().optional(),
   color_symbolism: z.string().optional(),
   image_url: z.string().url().optional(),
+  tags: z.array(z.string()).optional(),
+  bible_refs: z.array(z.string()).optional(),
   created_at: z.string().optional(), // returned as ISO string from DB; optional on input
 });
 

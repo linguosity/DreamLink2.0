@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CalendarIcon, BookIcon } from "lucide-react";
+import { CalendarIcon, BookIcon, PuzzleIcon } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -17,6 +17,10 @@ type DreamEntryProps = {
     title?: string;
     dream_summary?: string;
     analysis_summary?: string;
+    topic_sentence?: string;
+    supporting_points?: string[];
+    conclusion_sentence?: string;
+    formatted_analysis?: string;
     tags?: string[];
     bible_refs?: string[];
     created_at?: string;
@@ -50,6 +54,37 @@ export default function DreamCard({ empty, dream }: DreamEntryProps) {
   const handleCardClick = () => {
     // Always open dialog, even for placeholder/example dreams
     setIsOpen(true);
+  };
+
+  // Function to format Bible citations in parentheses with tooltips
+  const formatBibleCitations = (text: string | undefined, refs?: string[]) => {
+    if (!text || !refs || refs.length === 0) return text;
+    
+    // Create JSX elements with formatted citations and tooltips
+    return (
+      <TooltipProvider>
+        {text.split(/(\([^)]*\))/).map((part, index) => {
+          // Check if this part contains a Bible reference
+          const refMatch = part.match(/\(([\w\s]+\d+:\d+)\)/);
+          
+          if (refMatch && refs.includes(refMatch[1])) {
+            const reference = refMatch[1];
+            return (
+              <Tooltip key={index}>
+                <TooltipTrigger asChild>
+                  <span className="cursor-help">{part}</span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="max-w-[300px] text-xs">{BIBLE_VERSES[reference as keyof typeof BIBLE_VERSES] || "Verse content"}</p>
+                </TooltipContent>
+              </Tooltip>
+            );
+          }
+          
+          return <span key={index}>{part}</span>;
+        })}
+      </TooltipProvider>
+    );
   };
 
   return (
@@ -89,26 +124,7 @@ export default function DreamCard({ empty, dream }: DreamEntryProps) {
             </div>
           )}
           
-          {/* Bible References */}
-          {dream.bible_refs && dream.bible_refs.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              <TooltipProvider>
-                {dream.bible_refs.map((ref, index) => (
-                  <Tooltip key={index}>
-                    <TooltipTrigger asChild>
-                      <Badge variant="outline" className="text-xs flex items-center gap-1">
-                        <BookIcon className="h-2 w-2" />
-                        {ref}
-                      </Badge>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="max-w-[300px] text-xs">{BIBLE_VERSES[ref as keyof typeof BIBLE_VERSES] || "Verse content"}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                ))}
-              </TooltipProvider>
-            </div>
-          )}
+          {/* Bible References - removed from card view */}
         </CardContent>
       </Card>
 
@@ -128,27 +144,11 @@ export default function DreamCard({ empty, dream }: DreamEntryProps) {
             </div>
           </DialogHeader>
           
-          <Tabs defaultValue="original" className="w-full">
+          <Tabs defaultValue="analysis" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="analysis" className="flex items-center gap-1"><PuzzleIcon className="h-3 w-3" />Analysis</TabsTrigger>
               <TabsTrigger value="original">Original Dream</TabsTrigger>
-              <TabsTrigger value="analysis">Dream Analysis</TabsTrigger>
             </TabsList>
-            
-            <TabsContent value="original" className="space-y-4 p-1">
-              <div className="text-sm whitespace-pre-wrap">
-                {dream.original_text}
-              </div>
-              
-              {dream.tags && dream.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1 pt-4 border-t">
-                  {dream.tags.map((tag, index) => (
-                    <Badge key={index} variant="secondary" className="text-xs">
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-            </TabsContent>
             
             <TabsContent value="analysis" className="space-y-4 p-1">
               {dream.dream_summary && (
@@ -160,32 +160,83 @@ export default function DreamCard({ empty, dream }: DreamEntryProps) {
                 </div>
               )}
               
-              {dream.analysis_summary && (
+              {dream.formatted_analysis ? (
                 <div className="space-y-2">
                   <h4 className="text-sm font-medium">Analysis</h4>
                   <p className="text-sm text-muted-foreground">
-                    {dream.analysis_summary}
+                    {formatBibleCitations(dream.formatted_analysis, dream.bible_refs)}
                   </p>
                 </div>
-              )}
-              
-              {dream.bible_refs && dream.bible_refs.length > 0 && (
-                <div className="space-y-2 pt-4 border-t">
-                  <h4 className="text-sm font-medium">Biblical References</h4>
-                  <div className="space-y-2">
-                    {dream.bible_refs.map((ref, index) => (
-                      <div key={index} className="text-sm">
-                        <span className="font-medium">{ref}:</span>{" "}
-                        <span className="text-muted-foreground">
-                          {BIBLE_VERSES[ref as keyof typeof BIBLE_VERSES] || "Verse content"}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
+              ) : dream.analysis_summary ? (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium">Analysis</h4>
+                  <p className="text-sm text-muted-foreground">
+                    {formatBibleCitations(dream.analysis_summary, dream.bible_refs)}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium">Analysis</h4>
+                  {dream.topic_sentence && (
+                    <p className="text-sm text-muted-foreground font-medium">
+                      {dream.topic_sentence}
+                    </p>
+                  )}
+                  {dream.supporting_points && dream.supporting_points.length > 0 && (
+                    <ul className="text-sm text-muted-foreground list-disc pl-5 space-y-1">
+                      {dream.supporting_points.map((point, index) => (
+                        <li key={index}>{formatBibleCitations(point, dream.bible_refs)}</li>
+                      ))}
+                    </ul>
+                  )}
+                  {dream.conclusion_sentence && (
+                    <p className="text-sm text-muted-foreground mt-2">
+                      {dream.conclusion_sentence}
+                    </p>
+                  )}
                 </div>
               )}
             </TabsContent>
+            
+            <TabsContent value="original" className="space-y-4 p-1">
+              <div className="text-sm whitespace-pre-wrap">
+                {dream.original_text}
+              </div>
+            </TabsContent>
           </Tabs>
+          
+          {/* Footer with tags and biblical references */}
+          <div className="mt-4 pt-4 border-t flex flex-wrap gap-2">
+            {dream.tags && dream.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {dream.tags.map((tag, index) => (
+                  <Badge key={index} variant="secondary" className="text-xs">
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
+            )}
+            
+            {dream.bible_refs && dream.bible_refs.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                <TooltipProvider>
+                  {dream.bible_refs.map((ref, index) => (
+                    <Tooltip key={index}>
+                      <TooltipTrigger asChild>
+                        <Badge variant="outline" className="text-xs flex items-center gap-1">
+                          <BookIcon className="h-2 w-2" />
+                          {ref}
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="max-w-[300px] text-xs">{BIBLE_VERSES[ref as keyof typeof BIBLE_VERSES] || "Verse content"}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  ))}
+                </TooltipProvider>
+              </div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </>
