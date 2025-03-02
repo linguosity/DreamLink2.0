@@ -1,12 +1,39 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/utils/supabase/server';
 
+// For debugging purposes - directly access supabase URL and key to debug
+import { createClient as createDirectClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabaseAdmin = createDirectClient(supabaseUrl, supabaseKey);
 
-export async function POST() {
+export async function GET() {
   try {
+    // Get server-side supabase client 
+    const supabase = await createClient();
+    
+    // Check database structure
+    const { data: tables, error: tablesError } = await supabaseAdmin
+      .from('pg_tables')
+      .select('tablename')
+      .eq('schemaname', 'public');
+      
+    if (tablesError) {
+      console.error("Error checking tables:", tablesError);
+      return NextResponse.json({ 
+        error: "Unable to query database structure", 
+        details: tablesError 
+      }, { status: 500 });
+    }
+    
+    // Check dream_entries table columns
+    const { data: dreamEntryColumns, error: columnsError } = await supabaseAdmin
+      .rpc('get_column_info', { table_name: 'dream_entries' });
+      
+    if (columnsError) {
+      console.error("Error checking dream_entries columns:", columnsError);
+    }
+    
     // 🌟 Create a Dummy User (You must manually create this user in Supabase Auth)
     const user_id = '550e8400-e29b-41d4-a716-446655440000'; // Replace with an actual Supabase Auth user ID
 
@@ -32,6 +59,8 @@ export async function POST() {
             'Water is often linked to emotions—falling into water could mean deep emotional challenges.',
           image_url:
             'https://your-supabase-url.com/storage/v1/object/public/dream-images/flying-dream.jpg',
+          tags: ['flying', 'water', 'falling', 'freedom', 'control'],
+          bible_refs: ['Isaiah 40:31', 'Proverbs 24:16']
         },
       ])
       .select()
@@ -83,9 +112,35 @@ export async function POST() {
       },
     ]);
 
-    return NextResponse.json({ message: 'Database seeded successfully!' }, { status: 200 });
+    // Try to create a test dream entry directly
+    const { data: testDreamDirect, error: testDreamDirectError } = await supabaseAdmin
+      .from('dream_entries')
+      .insert({
+        user_id,
+        original_text: 'Test dream via admin client for debugging',
+        title: 'Debug Test',
+        tags: ['test', 'debug'],
+        bible_refs: ['Genesis 1:1']
+      })
+      .select()
+      .single();
+      
+    if (testDreamDirectError) {
+      console.error("Error with direct test insert:", testDreamDirectError);
+    }
+    
+    return NextResponse.json({ 
+      message: 'Database seeded successfully!',
+      tables: tables,
+      dreamEntryColumns: dreamEntryColumns,
+      testDreamDirect: testDreamDirect,
+      testDreamDirectError: testDreamDirectError
+    }, { status: 200 });
   } catch (error: any) {
     console.error('Seeding error:', error.message);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ 
+      error: error.message,
+      stack: error.stack
+    }, { status: 500 });
   }
 }

@@ -18,6 +18,8 @@ create table if not exists dream_entries (
   gematria_interpretation text,
   color_symbolism text,
   image_url text,
+  tags text[],
+  bible_refs text[],
   created_at timestamp default now()
 );
 
