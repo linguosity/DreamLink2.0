@@ -1,5 +1,3 @@
-// @ts-check
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   typescript: {
@@ -10,8 +8,9 @@ const nextConfig = {
     // Ignore ESLint errors during build
     ignoreDuringBuilds: true,
   },
-  // Simplify output
+  // Use a more compatible output mode for Vercel
   output: 'standalone',
-};
+  reactStrictMode: true,
+}
 
-export default nextConfig;
+module.exports = nextConfig

@@ -123,8 +123,7 @@ export async function GET(request: Request) {
     const { data, error } = await supabase
       .from("dream_entries")
       .select("*")
-      .eq("id", id)
-      .single();
+      .eq("id", id);
       
     if (error) {
       console.error("Error fetching dream:", error);
@@ -134,7 +133,10 @@ export async function GET(request: Request) {
       );
     }
     
-    return NextResponse.json(data);
+    // Return the dream in the expected format for the client
+    return NextResponse.json({
+      dreams: data || []
+    });
   } catch (error) {
     console.error("Error processing GET request:", error);
     return NextResponse.json(

@@ -69,6 +69,8 @@ export default function AnimatedDreamGrid({ dreams, maxRowItems = 3 }: AnimatedD
   
   // Check for loading dream
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
     const storedLoadingId = localStorage.getItem('loadingDreamId');
     if (storedLoadingId) {
       setLoadingDreamId(storedLoadingId);

@@ -221,8 +221,26 @@ export default function DreamCard({ empty, loading: initialLoading, dream }: Dre
           localStorage.removeItem('loadingDreamId');
           clearInterval(interval);
         } else {
-          // Refresh the page to get updated dream data
-          router.refresh();
+          // Check dream status via API instead of router.refresh() to avoid RSC loops
+          fetch(`/api/dream-entries?id=${dream.id}`, {
+            method: 'GET',
+            headers: {
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+            }
+          })
+          .then(response => response.json())
+          .then(data => {
+            if (data && data.dreams && data.dreams.length > 0) {
+              const updatedDream = data.dreams[0];
+              // If dream now has analysis, refresh the page once
+              if (updatedDream.dream_summary || updatedDream.analysis_summary || 
+                 (updatedDream.supporting_points && updatedDream.supporting_points.length > 0)) {
+                console.log('Dream analysis detected via API, refreshing page');
+                window.location.reload();
+              }
+            }
+          })
+          .catch(err => console.error('Error checking dream status:', err));
         }
       }, 2000);
       
