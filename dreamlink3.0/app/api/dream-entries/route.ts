@@ -104,6 +104,46 @@ async function analyzeDream(dreamText: string): Promise<DreamAnalysis> {
   }
 }
 
+export async function GET(request: Request) {
+  const supabase = await createClient();
+  
+  try {
+    // Get dream ID from URL
+    const url = new URL(request.url);
+    const id = url.searchParams.get('id');
+    
+    if (!id) {
+      return NextResponse.json(
+        { error: "Dream ID is required" },
+        { status: 400 }
+      );
+    }
+    
+    // Get the dream entry
+    const { data, error } = await supabase
+      .from("dream_entries")
+      .select("*")
+      .eq("id", id)
+      .single();
+      
+    if (error) {
+      console.error("Error fetching dream:", error);
+      return NextResponse.json(
+        { error: "Dream not found" },
+        { status: 404 }
+      );
+    }
+    
+    return NextResponse.json(data);
+  } catch (error) {
+    console.error("Error processing GET request:", error);
+    return NextResponse.json(
+      { error: "An unexpected error occurred" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function DELETE(request: Request) {
   const supabase = await createClient();
   

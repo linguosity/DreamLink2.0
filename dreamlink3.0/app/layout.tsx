@@ -71,8 +71,8 @@ export default async function RootLayout({
               {children}
             </div>
             
-            {/* Footer - only show if user is logged in or on auth page */}
-            {(user || isAuthPage) && (
+            {/* Global footer only shown on auth pages */}
+            {isAuthPage && (
               <footer className="w-full flex items-center justify-between border-t p-4 text-xs">
                 <p className="text-muted-foreground">
                   © {new Date().getFullYear()} Dreamlink. All rights reserved.
