@@ -25,6 +25,7 @@ export function OpenAITest() {
       console.log("🔍 Sending request to Edge Function API");
       const startTime = Date.now();
       
+      // Using axios from the server-side, so client still uses fetch
       const response = await fetch('/api/openai-analysis', {
         method: 'POST',
         headers: {

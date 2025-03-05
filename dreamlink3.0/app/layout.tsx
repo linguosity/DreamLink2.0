@@ -1,7 +1,7 @@
 import { EnvVarWarning } from "@/components/env-var-warning";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { hasEnvVars } from "@/utils/supabase/check-env-vars";
-import { Geist } from "next/font/google";
+import { Inter } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { createClient } from "@/utils/supabase/server";
 import Navbar from "@/components/Navbar";
@@ -10,7 +10,7 @@ import "./globals.css";
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
-  : "http://localhost:3000";
+  : "https://dreamlink3-0.vercel.app";
 
 export const metadata = {
   metadataBase: new URL(defaultUrl),
@@ -18,9 +18,10 @@ export const metadata = {
   description: "Track and analyze your dreams with AI-powered insights",
 };
 
-const geistSans = Geist({
+const inter = Inter({
   display: "swap",
   subsets: ["latin"],
+  variable: "--font-inter",
 });
 
 export default async function RootLayout({
@@ -46,7 +47,7 @@ export default async function RootLayout({
     pathname.includes('/forgot-password');
   
   return (
-    <html lang="en" className={geistSans.className} suppressHydrationWarning>
+    <html lang="en" className={inter.className} suppressHydrationWarning>
       <body className="bg-background text-foreground">
         <ThemeProvider
           attribute="class"

@@ -24,9 +24,16 @@ export const signUpAction = async (formData: FormData) => {
     let origin;
     try {
       const headersList = headers();
-      origin = headersList.get("origin") || "http://localhost:3000";
+      const headerOrigin = headersList.get("origin");
+      // Use Vercel URL if available, otherwise fallback to header origin or default URL
+      origin = process.env.VERCEL_URL 
+        ? `https://${process.env.VERCEL_URL}` 
+        : (headerOrigin || "https://dreamlink3-0.vercel.app");
     } catch {
-      origin = "http://localhost:3000";
+      // Fallback to Vercel URL or a production default
+      origin = process.env.VERCEL_URL 
+        ? `https://${process.env.VERCEL_URL}` 
+        : "https://dreamlink3-0.vercel.app";
     }
 
     const { error } = await supabase.auth.signUp({

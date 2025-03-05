@@ -1,15 +1,15 @@
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+/* import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input"; */
 import Link from "next/link";
 import CompactDreamInput from "@/components/CompactDreamInput";
 import AnimatedDreamGrid from "@/components/AnimatedDreamGrid";
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
-  : "http://localhost:3000";
+  : "https://dreamlink3-0.vercel.app";
 
 export default async function MainPage() {
   const supabase = await createClient();

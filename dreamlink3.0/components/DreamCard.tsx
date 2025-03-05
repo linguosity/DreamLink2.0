@@ -7,7 +7,7 @@ import dynamic from 'next/dynamic';
 // Import UI components with error handling
 let Card: any, CardContent: any, CardHeader: any, CardTitle: any;
 try {
-  const cardModule = require("@/components/ui/card");
+  const cardModule = require("../components/ui/card.tsx");
   Card = cardModule.Card;
   CardContent = cardModule.CardContent;
   CardHeader = cardModule.CardHeader;
@@ -32,7 +32,7 @@ try {
 // Import badge component with error handling
 let Badge: any;
 try {
-  const badgeModule = require("@/components/ui/badge");
+  const badgeModule = require("../components/ui/badge.tsx");
   Badge = badgeModule.Badge;
 } catch (e) {
   console.error("Failed to load badge component:", e);
@@ -44,7 +44,7 @@ try {
 // Import button component with error handling
 let Button: any;
 try {
-  const buttonModule = require("@/components/ui/button");
+  const buttonModule = require("../components/ui/button.tsx");
   Button = buttonModule.Button;
 } catch (e) {
   console.error("Failed to load button component:", e);
@@ -58,7 +58,7 @@ import { CalendarIcon, BookIcon, PuzzleIcon, Trash2Icon, ShareIcon } from "lucid
 // Import dialog components with error handling
 let Dialog: any, DialogContent: any, DialogHeader: any, DialogTitle: any, DialogTrigger: any, DialogDescription: any, DialogFooter: any;
 try {
-  const dialogModule = require("@/components/ui/dialog");
+  const dialogModule = require("../components/ui/dialog.tsx");
   Dialog = dialogModule.Dialog;
   DialogContent = dialogModule.DialogContent;
   DialogHeader = dialogModule.DialogHeader;
@@ -81,7 +81,7 @@ try {
 // Import tabs components with error handling
 let Tabs: any, TabsContent: any, TabsList: any, TabsTrigger: any;
 try {
-  const tabsModule = require("@/components/ui/tabs");
+  const tabsModule = require("../components/ui/tabs.tsx");
   Tabs = tabsModule.Tabs;
   TabsContent = tabsModule.TabsContent;
   TabsList = tabsModule.TabsList;
@@ -98,7 +98,7 @@ try {
 // Import tooltip components with error handling
 let Tooltip: any, TooltipContent: any, TooltipProvider: any, TooltipTrigger: any;
 try {
-  const tooltipModule = require("@/components/ui/tooltip");
+  const tooltipModule = require("../components/ui/tooltip.tsx");
   Tooltip = tooltipModule.Tooltip;
   TooltipContent = tooltipModule.TooltipContent;
   TooltipProvider = tooltipModule.TooltipProvider;
@@ -115,7 +115,7 @@ try {
 // Import skeleton component with error handling
 let Skeleton: any;
 try {
-  const skeletonModule = require("@/components/ui/skeleton");
+  const skeletonModule = require("../components/ui/skeleton.tsx");
   Skeleton = skeletonModule.Skeleton;
 } catch (e) {
   console.error("Failed to load skeleton component:", e);

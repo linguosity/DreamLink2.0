@@ -1,4 +1,4 @@
-import { createClient } from "@/utils/supabase/server";
+import { createClient } from "../../../utils/supabase/server.ts";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -22,11 +22,46 @@ async function analyzeDream(dreamText: string): Promise<DreamAnalysis> {
   try {
     // Call our Edge Function API with absolute URL
     // In server-to-server communication, we need a full URL
-    const baseUrl = process.env.NEXT_PUBLIC_URL || 'http://localhost:3000';
-    const apiUrl = new URL('/api/openai-analysis', baseUrl).toString();
+    
+    // Use fully qualified URL for edge functions
+    // Get the correct base URL for the current environment
+    const baseUrl = process.env.VERCEL_URL 
+      ? `https://${process.env.VERCEL_URL}`
+      : "https://dreamlink3-0.vercel.app";
+    
+    // Create full URL for edge function
+    const apiUrl = `${baseUrl}/api/openai-analysis`;
     
     console.log(`🔍 Calling OpenAI Edge Function at: ${apiUrl}`);
+    console.log(`🔍 Dream text length: ${dreamText.length}`);
+    console.log(`🔍 Dream text preview: ${dreamText.substring(0, 100)}...`);
+    console.log(`🔍 OpenAI API Key available: ${process.env.OPENAI_API_KEY ? 'Yes' : 'No'}`);
+    console.log(`🔍 OpenAI API Key length: ${process.env.OPENAI_API_KEY?.length || 0}`);
     
+    // Try a simple direct API call first for testing
+    try {
+      console.log("🔍 Testing direct OpenAI API access...");
+      const testResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini-2024-07-18",
+          messages: [{ role: "user", content: "Say hello" }],
+          max_tokens: 5
+        }),
+      });
+      
+      console.log(`🔍 Direct OpenAI API test status: ${testResponse.status}`);
+      const testResponseText = await testResponse.text();
+      console.log(`🔍 Direct OpenAI API test response: ${testResponseText}`);
+    } catch (testError) {
+      console.error("❌ Direct OpenAI API test failed:", testError);
+    }
+    
+    // Continue with the normal flow
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
@@ -38,13 +73,27 @@ async function analyzeDream(dreamText: string): Promise<DreamAnalysis> {
       })
     });
 
+    // Get raw response for debugging
+    const rawResponseText = await response.text();
+    console.log(`🔍 OpenAI Edge Function response status: ${response.status}`);
+    console.log(`🔍 OpenAI Edge Function raw response: ${rawResponseText}`);
+    
     if (!response.ok) {
-      const errorData = await response.json();
-      console.error("OpenAI Edge Function error:", errorData);
-      throw new Error("Failed to analyze dream");
+      console.error("OpenAI Edge Function error status:", response.status);
+      console.error("OpenAI Edge Function error response:", rawResponseText);
+      
+      let errorData;
+      try {
+        errorData = JSON.parse(rawResponseText);
+      } catch (parseError) {
+        errorData = { message: "Could not parse error response" };
+      }
+      
+      throw new Error(`Failed to analyze dream: ${JSON.stringify(errorData)}`);
     }
 
-    const analysisResponse = await response.json();
+    // Parse the response again since we already consumed it as text
+    const analysisResponse = JSON.parse(rawResponseText);
     
     // Edge function gives us:
     // analysis, topicSentence, supportingPoints, conclusionSentence
